@@ -45,7 +45,7 @@ void predict_server(char * info[MAX_INFO_NUM], char * data[MAX_DATA_NUM], int da
 	result += "\n";
 	for (unsigned int i = 0; i < answer.size(); i++)
 	{
-		result += to_string(i);
+		result += to_string(i + 1);
 		for (unsigned int j = 0; j < answer[i].VMList.size(); j++)
 		{
 			result += " ";
