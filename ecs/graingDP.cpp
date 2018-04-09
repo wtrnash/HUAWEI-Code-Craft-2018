@@ -25,7 +25,7 @@ bool getwaitline() {//rate为总cpu/总mem
 	else { morecpu = 8; moremem = 5; }
 	int max = vm.size() - 1;
 
-	for (max; max >= 0; max--)if (vm[max].cpu <= restcpu&&vm[max].mem <= restmem&&vm[max].num>0)break;
+	for (; max >= 0; max--)if (vm[max].cpu <= restcpu&&vm[max].mem <= restmem&&vm[max].num>0)break;
 	for (int i = max; i >= 0; i --) {
 		double temprate2 = (double)vm[i].cpu/ vm[i].mem;
 		//cout << "temprate2: " << temprate2 << endl;
@@ -56,7 +56,7 @@ bool getwaitline() {//rate为总cpu/总mem
 
 vector<VM> putaVMin(vector<VM> putin, VM v) {//将虚拟机v放入目标虚拟机序列
 	bool isexist = false;
-	for (int i = 0; i < putin.size(); i++) {
+	for (unsigned int i = 0; i < putin.size(); i++) {
 		if (putin[i].index == v.index) {
 			isexist = true;
 			putin[i].num += v.num;
@@ -65,7 +65,7 @@ vector<VM> putaVMin(vector<VM> putin, VM v) {//将虚拟机v放入目标虚拟机序列
 	if (!isexist) {
 		if (putin.size()>0) {
 			bool isfind = false;
-			for (int i = 0; i < putin.size(); i++) {
+			for (unsigned int i = 0; i < putin.size(); i++) {
 				if (putin[i].index > v.index) {
 					isfind = true;
 					vector<VM>::iterator pr = putin.begin();
@@ -82,7 +82,7 @@ vector<VM> putaVMin(vector<VM> putin, VM v) {//将虚拟机v放入目标虚拟机序列
 }
 
 void putinPhysicServer(vector<VM> putin) {//将一次放入序列的虚拟机装入物理服务器，并更新物理服务器剩余容量
-	for (int i = 0; i < putin.size(); i++) {
+	for (unsigned int i = 0; i < putin.size(); i++) {
 		Servers[Servers.size() - 1].VMList = putaVMin(Servers[Servers.size() - 1].VMList, putin[i]);
 		Servers[Servers.size() - 1].restcpu -= putin[i].cpu*putin[i].num;
 		Servers[Servers.size() - 1].restmemory -= putin[i].mem*putin[i].num;
@@ -128,7 +128,7 @@ vector<PhysicServer> allocate_vm(int n, vector<Flavor> flavors, Physical_server 
 	memorysize = physical_server.memory_size;
 	for (unsigned int i = 0; i < flavors.size(); i++)
 	{
-		VM temp_vm = {flavors[i].flavor_name, atoi(flavors[i].flavor_name.substr(6).c_str()) - 1,flavors[i].cpu_core, ceil(1.0 * flavors[i].memory_size / 1024), flavors[i].predict_number};
+		VM temp_vm = {flavors[i].flavor_name, atoi(flavors[i].flavor_name.substr(6).c_str()) - 1,flavors[i].cpu_core, (int)ceil(1.0 * flavors[i].memory_size / 1024), (int)flavors[i].predict_number};
 		vm.push_back(temp_vm);
 	}
 
@@ -140,7 +140,7 @@ vector<PhysicServer> allocate_vm(int n, vector<Flavor> flavors, Physical_server 
 			int restcpu = Servers[Servers.size() - 1].restcpu;
 			int restmem = Servers[Servers.size() - 1].restmemory;
 			
-			for (int i = 0; i < temp.size(); i++)
+			for (unsigned int i = 0; i < temp.size(); i++)
 			{
 				vc.push_back(vector<vector<int>>(restcpu + 1, vector<int>(restmem + 1, 0)));
 			}
@@ -153,7 +153,7 @@ vector<PhysicServer> allocate_vm(int n, vector<Flavor> flavors, Physical_server 
 			tempput.clear();
 		}
 		n = 0;
-		for (int i = 0; i < vm.size(); i++) {//更新剩余待放入虚拟机数量
+		for (unsigned int i = 0; i < vm.size(); i++) {//更新剩余待放入虚拟机数量
 			n += vm[i].num;
 		}
 	}
