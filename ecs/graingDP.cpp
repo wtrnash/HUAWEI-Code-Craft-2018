@@ -12,18 +12,23 @@ int memorysize;
 bool getwaitline() {//rate为总cpu/总mem
 	/*将虚拟机规格从大到小放入待dp序列，且规格相对于剩余容量越小，放入的该种
 	虚拟机越小，当某一维度资源消耗较大时，更多地放入另一维度消耗更大的虚拟机*/
+	//cout << "start " << endl;
 	int restcpu = Servers[Servers.size() - 1].restcpu;
 	int restmem = Servers[Servers.size() - 1].restmemory;
+
 	if (restcpu == 0 || restmem == 0)return false;//如果为0，已经放满
 	double rate = (double)Servers[Servers.size() - 1].cpu/ Servers[Servers.size() - 1].memory;
 	double temprate = (double)restcpu / restmem;
+
 	int morecpu, moremem;
 	if (temprate >= rate) { morecpu = 5; moremem = 8; }
 	else { morecpu = 8; moremem = 5; }
 	int max = vm.size() - 1;
+
 	for (max; max >= 0; max--)if (vm[max].cpu <= restcpu&&vm[max].mem <= restmem&&vm[max].num>0)break;
 	for (int i = max; i >= 0; i --) {
 		double temprate2 = (double)vm[i].cpu/ vm[i].mem;
+		//cout << "temprate2: " << temprate2 << endl;
 		if (vm[i].num > 0 && ((temprate2 >= rate&&morecpu > 0) || (temprate2 < rate && moremem > 0))) {
 			if (temprate >= rate)morecpu--;
 			else moremem--;
@@ -44,6 +49,7 @@ bool getwaitline() {//rate为总cpu/总mem
 	/*for (vector<VM>::iterator pr = vm.end(); pr >= vm.begin(); pr--) {//移除已经全部放入的虚拟机规格
 		if ((*pr).num == 0)vm.erase(pr);
 	}*/
+	//cout << "temp.size: " << temp.size() << endl;
 	if (temp.size() == 0)return false;//当无法放入符合条件的虚拟机，视为该物理服务器已经装满
 	else return true;
 }
@@ -122,10 +128,10 @@ vector<PhysicServer> allocate_vm(int n, vector<Flavor> flavors, Physical_server 
 	memorysize = physical_server.memory_size;
 	for (unsigned int i = 0; i < flavors.size(); i++)
 	{
-		VM temp_vm = {flavors[i].flavor_name, atoi(flavors[i].flavor_name.substr(6).c_str()),flavors[i].cpu_core, flavors[i].memory_size, flavors[i].predict_number};
+		VM temp_vm = {flavors[i].flavor_name, atoi(flavors[i].flavor_name.substr(6).c_str()) - 1,flavors[i].cpu_core, ceil(1.0 * flavors[i].memory_size / 1024), flavors[i].predict_number};
 		vm.push_back(temp_vm);
 	}
-	
+
 	while (n > 0) {
 		PhysicServer ps = { cpusize,memorysize,cpusize,memorysize};
 		Servers.push_back(ps);
@@ -133,9 +139,15 @@ vector<PhysicServer> allocate_vm(int n, vector<Flavor> flavors, Physical_server 
 			vector<VM> a = temp;
 			int restcpu = Servers[Servers.size() - 1].restcpu;
 			int restmem = Servers[Servers.size() - 1].restmemory;
-			for (int i = 0; i < temp.size(); i++)vc.push_back(vector<vector<int>>(restcpu + 1, vector<int>(restmem + 1, 0)));
+			
+			for (int i = 0; i < temp.size(); i++)
+			{
+				vc.push_back(vector<vector<int>>(restcpu + 1, vector<int>(restmem + 1, 0)));
+			}
+				
 			tempput = allocation(temp.size()-1,restcpu,restmem);
 			putinPhysicServer(tempput);
+		
 			vc.clear();
 			temp.clear();
 			tempput.clear();

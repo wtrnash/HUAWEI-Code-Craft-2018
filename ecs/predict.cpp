@@ -32,28 +32,26 @@ void predict_server(char * info[MAX_INFO_NUM], char * data[MAX_DATA_NUM], int da
 	vector<PhysicServer> answer = allocate_vm(sum_of_flavor, flavors, physical_server, is_cpu);
 
 	//¥¶¿Ì ‰≥ˆ
-	string result = answer.size() + "\n";
-	result += "\n";
+	string result = to_string(answer.size()) + "\n";
 	for (unsigned int i = 0; i < flavors.size(); i++)
 	{
 		result += flavors[i].flavor_name;
 		result += " ";
-		result += flavors[i].predict_number;
+		result += to_string(flavors[i].predict_number);
 		result += " \n";
 	}
 	result += "\n";
-
-	result += answer.size();
+	result += to_string(answer.size());
 	result += "\n";
 	for (unsigned int i = 0; i < answer.size(); i++)
 	{
-		result += i + 1;
+		result += to_string(i + 1);
 		for (unsigned int j = 0; j < answer[i].VMList.size(); j++)
 		{
 			result += " ";
 			result += answer[i].VMList[j].name;
 			result += " ";
-			result += answer[i].VMList[j].num;
+			result += to_string(answer[i].VMList[j].num);
 		}
 		result += "\n";
 	}
