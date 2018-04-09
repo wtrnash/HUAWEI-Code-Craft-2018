@@ -1,7 +1,6 @@
 #include "predict.h"
-#include "graingDP.h"
 
-//物理服务器结构体
+//物理服务器
 Physical_server physical_server;
 
 vector<Flavor> flavors;	//存放所有要预测的虚拟机的规格及对应训练集记录
@@ -14,7 +13,7 @@ string train_start_time, train_end_time;		//训练的开始和结束时间
 time_t train_start_time_t, train_end_time_t;	//训练的开始和结束时间转为time_t格式
 int train_day;					//需预测的天数
 int sum_of_flavor = 0;	//要预测的虚拟机总数
-
+vector<Allocated_Physical_server> physical_servers;	//所有物理服务器
 
 //你要完成的功能总入口
 void predict_server(char * info[MAX_INFO_NUM], char * data[MAX_DATA_NUM], int data_num, char * filename)
@@ -29,7 +28,7 @@ void predict_server(char * info[MAX_INFO_NUM], char * data[MAX_DATA_NUM], int da
 	predict();
 
 	//装配
-	vector<PhysicServer> answer = allocate_vm(sum_of_flavor, flavors, physical_server, is_cpu);
+	allocate_vm();
 
 	//处理输出
 	string result = to_string(sum_of_flavor) + "\n";
@@ -41,17 +40,17 @@ void predict_server(char * info[MAX_INFO_NUM], char * data[MAX_DATA_NUM], int da
 		result += " \n";
 	}
 	result += "\n";
-	result += to_string(answer.size());
+	result += to_string(physical_servers.size());
 	result += "\n";
-	for (unsigned int i = 0; i < answer.size(); i++)
+	for (unsigned int i = 0; i < physical_servers.size(); i++)
 	{
-		result += to_string(i + 1);
-		for (unsigned int j = 0; j < answer[i].VMList.size(); j++)
+		result += to_string(physical_servers[i].index);
+		for (unsigned int j = 0; j < physical_servers[i].flavors.size(); j++)
 		{
 			result += " ";
-			result += answer[i].VMList[j].name;
+			result += physical_servers[i].flavors[j].flavor_name;
 			result += " ";
-			result += to_string(answer[i].VMList[j].num);
+			result += to_string(physical_servers[i].flavors[j].predict_number);
 		}
 		result += "\n";
 	}
@@ -232,4 +231,63 @@ void predict()
 	}
 
 	return;
+}
+
+// 分配虚拟机
+void allocate_vm()
+{
+	//第一个物理服务器
+	int index = 1;
+	Allocated_Physical_server temp;
+	temp.index = index;
+	temp.left_cpu_core = physical_server.cpu_core;
+	temp.left_memory_size = physical_server.memory_size;
+	//遍历所有种类的flavors
+	for (unsigned int i = 0; i < flavors.size(); i++)
+	{
+		//每个种类遍历每个具体的虚拟机
+		for (unsigned int j = 0; j < flavors[i].predict_number; j++)
+		{
+			//如果可以放
+			if (flavors[i].cpu_core <= temp.left_cpu_core && (int)ceil(1.0 * flavors[i].memory_size / 1024) <= temp.left_memory_size)
+			{
+				//判断有没有在该物理机放置过同样规格的，放置过的话预测数量加一
+				unsigned int k;
+				for (k = 0; k < temp.flavors.size(); k++)
+				{
+					if (temp.flavors[k].flavor_name == flavors[i].flavor_name)
+					{
+						temp.flavors[k].predict_number++;
+						break;
+					}
+				}
+
+				//没有放置过则push_back一个新的
+				if (k == temp.flavors.size())
+				{
+					Flavor flavor = flavors[i];
+					flavor.predict_number = 1;
+					temp.flavors.push_back(flavor);
+				}
+
+				//temp减去放置的容量
+				temp.left_cpu_core -= flavors[i].cpu_core;
+				temp.left_memory_size -= (int)ceil(1.0 * flavors[i].memory_size / 1024);
+			}
+			else   //如果不能放则用全新的物理机
+			{
+				physical_servers.push_back(temp);
+				temp.index = ++index;
+				temp.left_cpu_core = physical_server.cpu_core - flavors[i].cpu_core;
+				temp.left_memory_size = physical_server.memory_size - (int)ceil(1.0 * flavors[i].memory_size / 1024);
+				temp.flavors.clear();
+				Flavor flavor = flavors[i];
+				flavor.predict_number = 1;
+				temp.flavors.push_back(flavor);
+			}
+		}
+	}
+	//放置最后一个可能没有push_back进去的temp
+	if ((unsigned int)index > physical_servers.size())
+		physical_servers.push_back(temp);
 }
