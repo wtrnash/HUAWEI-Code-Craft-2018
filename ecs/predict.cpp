@@ -266,10 +266,8 @@ void allocate_vm()
 			allocate_flavors.push_back(temp_flavor);
 		}
 	}
-
 	//降序排序
 	sort(allocate_flavors.begin(), allocate_flavors.end(), compare);
-
 	//第一个物理服务器
 	int index = 1;
 	Allocated_Physical_server temp;
@@ -290,7 +288,7 @@ void allocate_vm()
 				unsigned int k;
 				for (k = 0; k < physical_servers[m].flavors.size(); k++)
 				{
-					if (physical_servers[m].flavors[k].flavor_name == flavors[i].flavor_name)
+					if (physical_servers[m].flavors[k].flavor_name == allocate_flavors[i].flavor_name)
 					{
 						physical_servers[m].flavors[k].predict_number++;
 						break;
@@ -305,7 +303,7 @@ void allocate_vm()
 					physical_servers[m].flavors.push_back(flavor);
 				}
 
-				//temp减去放置的容量
+				//减去放置的容量
 				physical_servers[m].left_cpu_core -= allocate_flavors[i].cpu_core;
 				physical_servers[m].left_memory_size -= allocate_flavors[i].memory_size;
 				break;
