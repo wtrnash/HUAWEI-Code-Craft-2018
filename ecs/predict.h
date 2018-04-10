@@ -22,8 +22,8 @@ struct Physical_server {
 //虚拟机规格信息结构体
 struct Flavor {
 	string flavor_name;
-	int cpu_core;
-	int memory_size;
+	unsigned int cpu_core;
+	unsigned int memory_size;
 	vector<string> time;	//虚拟机申请记录的具体时间
 	unsigned int *flavor_number_of_day;		//记录虚拟机每天的申请数目
 	unsigned int predict_number = 0;		//记录预测的虚拟机总数
