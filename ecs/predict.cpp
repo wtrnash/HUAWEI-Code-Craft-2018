@@ -239,55 +239,60 @@ void allocate_vm()
 	//第一个物理服务器
 	int index = 1;
 	Allocated_Physical_server temp;
-	temp.index = index;
+	temp.index = index++;
 	temp.left_cpu_core = physical_server.cpu_core;
 	temp.left_memory_size = physical_server.memory_size;
+	physical_servers.push_back(temp);
 	//遍历所有种类的flavors
 	for (unsigned int i = 0; i < flavors.size(); i++)
 	{
 		//每个种类遍历每个具体的虚拟机
 		for (unsigned int j = 0; j < flavors[i].predict_number; j++)
 		{
-			//如果可以放
-			if (flavors[i].cpu_core <= (int)temp.left_cpu_core && (int)ceil(1.0 * flavors[i].memory_size / 1024) <= (int)temp.left_memory_size)
+			unsigned int m;
+			for (m = 0; m < physical_servers.size(); m++)
 			{
-				//判断有没有在该物理机放置过同样规格的，放置过的话预测数量加一
-				unsigned int k;
-				for (k = 0; k < temp.flavors.size(); k++)
+				//如果可以放
+				if (flavors[i].cpu_core <= (int)physical_servers[m].left_cpu_core && (int)ceil(1.0 * flavors[i].memory_size / 1024) <= (int)physical_servers[m].left_memory_size)
 				{
-					if (temp.flavors[k].flavor_name == flavors[i].flavor_name)
+					//判断有没有在该物理机放置过同样规格的，放置过的话预测数量加一
+					unsigned int k;
+					for (k = 0; k < physical_servers[m].flavors.size(); k++)
 					{
-						temp.flavors[k].predict_number++;
-						break;
+						if (physical_servers[m].flavors[k].flavor_name == flavors[i].flavor_name)
+						{
+							physical_servers[m].flavors[k].predict_number++;
+							break;
+						}
 					}
-				}
 
-				//没有放置过则push_back一个新的
-				if (k == temp.flavors.size())
-				{
-					Flavor flavor = flavors[i];
-					flavor.predict_number = 1;
-					temp.flavors.push_back(flavor);
-				}
+					//没有放置过则push_back一个新的
+					if (k == physical_servers[m].flavors.size())
+					{
+						Flavor flavor = flavors[i];
+						flavor.predict_number = 1;
+						physical_servers[m].flavors.push_back(flavor);
+					}
 
-				//temp减去放置的容量
-				temp.left_cpu_core -= flavors[i].cpu_core;
-				temp.left_memory_size -= (int)ceil(1.0 * flavors[i].memory_size / 1024);
+					//temp减去放置的容量
+					physical_servers[m].left_cpu_core -= flavors[i].cpu_core;
+					physical_servers[m].left_memory_size -= (int)ceil(1.0 * flavors[i].memory_size / 1024);
+					break;
+				}
 			}
-			else   //如果不能放则用全新的物理机
+			
+			if(m == physical_servers.size())   //如果不能放则用全新的物理机
 			{
-				physical_servers.push_back(temp);
-				temp.index = ++index;
+				temp.index = index++;
 				temp.left_cpu_core = physical_server.cpu_core - flavors[i].cpu_core;
 				temp.left_memory_size = physical_server.memory_size - (int)ceil(1.0 * flavors[i].memory_size / 1024);
 				temp.flavors.clear();
 				Flavor flavor = flavors[i];
 				flavor.predict_number = 1;
 				temp.flavors.push_back(flavor);
+				physical_servers.push_back(temp);
 			}
 		}
 	}
-	//放置最后一个可能没有push_back进去的temp
-	if ((unsigned int)index > physical_servers.size())
-		physical_servers.push_back(temp);
+	
 }
