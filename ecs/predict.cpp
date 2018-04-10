@@ -217,16 +217,16 @@ void tackle_train_record(string flavor_name, string time)
 void predict()
 {
 	int sum;
-	//求均值
+	//取和预测天数最后一样的天数
 	for (unsigned int i = 0; i < flavors.size(); i++)
 	{
 		sum = 0;
-		for (int j = 1; j <= train_day; j++)
+		for (int j = train_day - predict_day + 1; j <= train_day; j++)
 		{
 			sum += flavors[i].flavor_number_of_day[j];
 		}
 
-		flavors[i].predict_number = (double)sum / train_day * predict_day;
+		flavors[i].predict_number = sum;
 		sum_of_flavor += flavors[i].predict_number;
 	}
 
@@ -249,7 +249,7 @@ void allocate_vm()
 		for (unsigned int j = 0; j < flavors[i].predict_number; j++)
 		{
 			//如果可以放
-			if (flavors[i].cpu_core <= temp.left_cpu_core && (int)ceil(1.0 * flavors[i].memory_size / 1024) <= temp.left_memory_size)
+			if (flavors[i].cpu_core <= (int)temp.left_cpu_core && (int)ceil(1.0 * flavors[i].memory_size / 1024) <= (int)temp.left_memory_size)
 			{
 				//判断有没有在该物理机放置过同样规格的，放置过的话预测数量加一
 				unsigned int k;
