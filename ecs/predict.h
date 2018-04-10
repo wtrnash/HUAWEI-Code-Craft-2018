@@ -30,7 +30,7 @@ struct Flavor {
 };
 
 //实际安装的物理服务器
-struct Allocated_Physical_server {
+struct Allocated_physical_server {
 	int index;	//序号
 	unsigned int left_cpu_core;	//剩下的cpu
 	unsigned int left_memory_size;	//剩下的内存
@@ -44,5 +44,6 @@ void get_data(char * data[MAX_DATA_NUM], int data_num);
 void tackle_train_record(string flavor_name, string time);
 void predict(void);	
 void allocate_vm(void);
-vector<Allocated_Physical_server> allocate_one_time(vector<Flavor> allocate_flavors);
+vector<Allocated_physical_server> allocate_one_time(vector<Flavor> allocate_flavors);
+double get_current_utilization_rate(vector<Allocated_physical_server> allocated_physical_server);
 #endif

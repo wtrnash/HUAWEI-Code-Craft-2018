@@ -13,7 +13,7 @@ string train_start_time, train_end_time;		//训练的开始和结束时间
 time_t train_start_time_t, train_end_time_t;	//训练的开始和结束时间转为time_t格式
 int train_day;					//需预测的天数
 int sum_of_flavor = 0;	//要预测的虚拟机总数
-vector<Allocated_Physical_server> physical_servers;	//所有物理服务器
+vector<Allocated_physical_server> physical_servers;	//所有物理服务器
 
 //你要完成的功能总入口
 void predict_server(char * info[MAX_INFO_NUM], char * data[MAX_DATA_NUM], int data_num, char * filename)
@@ -253,6 +253,7 @@ bool compare(Flavor f1, Flavor f2)
 //模拟退火分配虚拟机
 void allocate_vm()
 {
+	vector<Flavor> min_allocate_flavors;
 	vector<Flavor> allocate_flavors;	//用来装配的所有虚拟机
 	Flavor temp_flavor;
 	for (unsigned int i = 0; i < flavors.size(); i++)
@@ -274,22 +275,51 @@ void allocate_vm()
 		indices.push_back(i);
 	}
 
-	vector<Allocated_Physical_server> current_physical_server;	//每次分配的物理服务器
-	
-	current_physical_server = allocate_one_time(allocate_flavors);
-	physical_servers = current_physical_server;
+	min_allocate_flavors = allocate_flavors;
+	vector<Allocated_physical_server> current_physical_server;	//每次分配的物理服务器
+	double min_utilization_rate = allocate_flavors.size();	//记录最少的服务器利用率，用n-1个服务器个数 和最后一个服务器的资源利用率表示，初始化为一个虚拟机放一个物理服务器
+	double current_utilization_rate;
+	double t = 100.0;	//初始温度
+	double t_min = 1.0;	//最终温度
+	double k = 0.9;	//温度下降系数
+	while(t > t_min)
+	{
+		random_shuffle(indices.begin(), indices.end());	//打乱下标排序
+		allocate_flavors = min_allocate_flavors;
+		//以indices前两个元素作为allocate_flavors要交换的下标
+		swap(allocate_flavors[indices[0]], allocate_flavors[indices[1]]);
+		current_physical_server = allocate_one_time(allocate_flavors);
+		current_utilization_rate = get_current_utilization_rate(current_physical_server);
+		//如果当前比较小，则直接取当前为最优解
+		if (current_utilization_rate < min_utilization_rate)
+		{
+			min_utilization_rate = current_utilization_rate;
+			physical_servers = current_physical_server;
+			min_allocate_flavors = allocate_flavors;
+		}
+		else   //否则一定概率更新当前为最优解
+		{
+			//exp(delta t / T) 大于一定概率（概率在0到1之间）则接受劣解
+			if (exp(1.0 * (min_utilization_rate - current_utilization_rate) / t) > (rand()/RAND_MAX))
+			{
+				min_utilization_rate = current_utilization_rate;
+				physical_servers = current_physical_server;
+				min_allocate_flavors = allocate_flavors;
+			}
+		}
 
-	
+		t *= k;
+	}
 		
 }
 
 //一次装配
-vector<Allocated_Physical_server> allocate_one_time(vector<Flavor> allocate_flavors)
+vector<Allocated_physical_server> allocate_one_time(vector<Flavor> allocate_flavors)
 {
-	vector<Allocated_Physical_server>  allocated_Physical_server;
+	vector<Allocated_physical_server>  allocated_Physical_server;
 	//第一个物理服务器
 	int index = 1;
-	Allocated_Physical_server temp;
+	Allocated_physical_server temp;
 	temp.index = index++;
 	temp.left_cpu_core = physical_server.cpu_core;
 	temp.left_memory_size = physical_server.memory_size;
@@ -342,4 +372,16 @@ vector<Allocated_Physical_server> allocate_one_time(vector<Flavor> allocate_flav
 	}
 
 	return allocated_Physical_server;
+}
+
+//获得当前利用率
+double get_current_utilization_rate(vector<Allocated_physical_server> allocated_physical_server)
+{
+	double current_utilization_rate;
+	if (is_cpu)
+		current_utilization_rate = allocated_physical_server.size() - 1 + 1.0 * (physical_server.cpu_core - allocated_physical_server[allocated_physical_server.size() - 1].left_cpu_core) / physical_server.cpu_core;
+	else
+		current_utilization_rate = allocated_physical_server.size() - 1 + 1.0 * (physical_server.memory_size - allocated_physical_server[allocated_physical_server.size() - 1].left_memory_size) / physical_server.memory_size;
+
+	return current_utilization_rate;
 }
