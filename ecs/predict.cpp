@@ -281,7 +281,7 @@ void allocate_vm()
 	double current_utilization_rate;
 	double t = 100.0;	//初始温度
 	double t_min = 1.0;	//最终温度
-	double k = 0.9;	//温度下降系数
+	double k = 0.9999;	//温度下降系数
 	while(t > t_min)
 	{
 		random_shuffle(indices.begin(), indices.end());	//打乱下标排序
