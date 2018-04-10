@@ -279,7 +279,7 @@ void allocate_vm()
 	vector<Allocated_physical_server> current_physical_server;	//每次分配的物理服务器
 	double min_utilization_rate = allocate_flavors.size();	//记录最少的服务器利用率，用n-1个服务器个数 和最后一个服务器的资源利用率表示，初始化为一个虚拟机放一个物理服务器
 	double current_utilization_rate;
-	double t = 100.0;	//初始温度
+	double t = 200.0;	//初始温度
 	double t_min = 1.0;	//最终温度
 	double k = 0.9999;	//温度下降系数
 	while(t > t_min)
