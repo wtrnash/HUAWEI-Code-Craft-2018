@@ -44,4 +44,5 @@ void get_data(char * data[MAX_DATA_NUM], int data_num);
 void tackle_train_record(string flavor_name, string time);
 void predict(void);	
 void allocate_vm(void);
+vector<Allocated_Physical_server> allocate_one_time(vector<Flavor> allocate_flavors);
 #endif

@@ -250,11 +250,10 @@ bool compare(Flavor f1, Flavor f2)
 			return f1.memory_size > f2.memory_size;
 	}
 }
-// 分配虚拟机
+//模拟退火分配虚拟机
 void allocate_vm()
 {
-	//模拟退火
-	vector<Flavor> allocate_flavors;
+	vector<Flavor> allocate_flavors;	//用来装配的所有虚拟机
 	Flavor temp_flavor;
 	for (unsigned int i = 0; i < flavors.size(); i++)
 	{
@@ -268,49 +267,69 @@ void allocate_vm()
 	}
 	//降序排序
 	sort(allocate_flavors.begin(), allocate_flavors.end(), compare);
+
+	vector<int> indices;	//记录flavor所有下标
+	for (unsigned int i = 0; i < allocate_flavors.size(); i++)
+	{
+		indices.push_back(i);
+	}
+
+	vector<Allocated_Physical_server> current_physical_server;	//每次分配的物理服务器
+	
+	current_physical_server = allocate_one_time(allocate_flavors);
+	physical_servers = current_physical_server;
+
+	
+		
+}
+
+//一次装配
+vector<Allocated_Physical_server> allocate_one_time(vector<Flavor> allocate_flavors)
+{
+	vector<Allocated_Physical_server>  allocated_Physical_server;
 	//第一个物理服务器
 	int index = 1;
 	Allocated_Physical_server temp;
 	temp.index = index++;
 	temp.left_cpu_core = physical_server.cpu_core;
 	temp.left_memory_size = physical_server.memory_size;
-	physical_servers.push_back(temp);
+	allocated_Physical_server.push_back(temp);
 	//遍历所有种类的flavors
 	for (unsigned int i = 0; i < allocate_flavors.size(); i++)
 	{
 		unsigned int m;
-		for (m = 0; m < physical_servers.size(); m++)
+		for (m = 0; m < allocated_Physical_server.size(); m++)
 		{
 			//如果可以放
-			if (allocate_flavors[i].cpu_core <= physical_servers[m].left_cpu_core && allocate_flavors[i].memory_size <= physical_servers[m].left_memory_size)
+			if (allocate_flavors[i].cpu_core <= allocated_Physical_server[m].left_cpu_core && allocate_flavors[i].memory_size <= allocated_Physical_server[m].left_memory_size)
 			{
 				//判断有没有在该物理机放置过同样规格的，放置过的话预测数量加一
 				unsigned int k;
-				for (k = 0; k < physical_servers[m].flavors.size(); k++)
+				for (k = 0; k < allocated_Physical_server[m].flavors.size(); k++)
 				{
-					if (physical_servers[m].flavors[k].flavor_name == allocate_flavors[i].flavor_name)
+					if (allocated_Physical_server[m].flavors[k].flavor_name == allocate_flavors[i].flavor_name)
 					{
-						physical_servers[m].flavors[k].predict_number++;
+						allocated_Physical_server[m].flavors[k].predict_number++;
 						break;
 					}
 				}
 
 				//没有放置过则push_back一个新的
-				if (k == physical_servers[m].flavors.size())
+				if (k == allocated_Physical_server[m].flavors.size())
 				{
 					Flavor flavor = allocate_flavors[i];
 					flavor.predict_number = 1;
-					physical_servers[m].flavors.push_back(flavor);
+					allocated_Physical_server[m].flavors.push_back(flavor);
 				}
 
 				//减去放置的容量
-				physical_servers[m].left_cpu_core -= allocate_flavors[i].cpu_core;
-				physical_servers[m].left_memory_size -= allocate_flavors[i].memory_size;
+				allocated_Physical_server[m].left_cpu_core -= allocate_flavors[i].cpu_core;
+				allocated_Physical_server[m].left_memory_size -= allocate_flavors[i].memory_size;
 				break;
 			}
 		}
 
-		if (m == physical_servers.size())   //如果不能放则用全新的物理机
+		if (m == allocated_Physical_server.size())   //如果不能放则用全新的物理机
 		{
 			temp.index = index++;
 			temp.left_cpu_core = physical_server.cpu_core - allocate_flavors[i].cpu_core;
@@ -318,8 +337,9 @@ void allocate_vm()
 			temp.flavors.clear();
 			Flavor flavor = allocate_flavors[i];
 			temp.flavors.push_back(flavor);
-			physical_servers.push_back(temp);
+			allocated_Physical_server.push_back(temp);
 		}
 	}
-		
+
+	return allocated_Physical_server;
 }
