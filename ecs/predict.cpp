@@ -253,7 +253,7 @@ bool compare(Flavor f1, Flavor f2)
 // 分配虚拟机
 void allocate_vm()
 {
-	//CF算法
+	//模拟退火
 	vector<Flavor> allocate_flavors;
 	Flavor temp_flavor;
 	for (unsigned int i = 0; i < flavors.size(); i++)
@@ -269,10 +269,6 @@ void allocate_vm()
 
 	//降序排序
 	sort(allocate_flavors.begin(), allocate_flavors.end(), compare);
-	/*for (unsigned int i = 0; i < allocate_flavors.size(); i++)
-	{
-		cout << allocate_flavors[i].flavor_name << endl;
-	}*/
 
 	//第一个物理服务器
 	int index = 1;
@@ -280,68 +276,52 @@ void allocate_vm()
 	temp.index = index++;
 	temp.left_cpu_core = physical_server.cpu_core;
 	temp.left_memory_size = physical_server.memory_size;
+	physical_servers.push_back(temp);
 	//遍历所有种类的flavors
-	for (unsigned int i = 0, j = allocate_flavors.size() - 1; i <= j;)
+	for (unsigned int i = 0; i < allocate_flavors.size(); i++)
 	{
-		//先把最左边最大的放进新的物理机
-		//判断有没有在该物理机放置过同样规格的，放置过的话预测数量加一
-		unsigned int k;
-		for (k = 0; k < temp.flavors.size(); k++)
+		unsigned int m;
+		for (m = 0; m < physical_servers.size(); m++)
 		{
-			if (temp.flavors[k].flavor_name == allocate_flavors[i].flavor_name)
+			//如果可以放
+			if (allocate_flavors[i].cpu_core <= physical_servers[m].left_cpu_core && allocate_flavors[i].memory_size <= physical_servers[m].left_memory_size)
 			{
-				temp.flavors[k].predict_number++;
+				//判断有没有在该物理机放置过同样规格的，放置过的话预测数量加一
+				unsigned int k;
+				for (k = 0; k < physical_servers[m].flavors.size(); k++)
+				{
+					if (physical_servers[m].flavors[k].flavor_name == flavors[i].flavor_name)
+					{
+						physical_servers[m].flavors[k].predict_number++;
+						break;
+					}
+				}
+
+				//没有放置过则push_back一个新的
+				if (k == physical_servers[m].flavors.size())
+				{
+					Flavor flavor = allocate_flavors[i];
+					flavor.predict_number = 1;
+					physical_servers[m].flavors.push_back(flavor);
+				}
+
+				//temp减去放置的容量
+				physical_servers[m].left_cpu_core -= allocate_flavors[i].cpu_core;
+				physical_servers[m].left_memory_size -= allocate_flavors[i].memory_size;
 				break;
 			}
 		}
 
-		//没有放置过则push_back一个新的
-		if (k == temp.flavors.size())
+		if (m == physical_servers.size())   //如果不能放则用全新的物理机
 		{
+			temp.index = index++;
+			temp.left_cpu_core = physical_server.cpu_core - allocate_flavors[i].cpu_core;
+			temp.left_memory_size = physical_server.memory_size - allocate_flavors[i].memory_size;
+			temp.flavors.clear();
 			Flavor flavor = allocate_flavors[i];
-			flavor.predict_number = 1;
 			temp.flavors.push_back(flavor);
+			physical_servers.push_back(temp);
 		}
-
-		//temp减去放置的容量
-		temp.left_cpu_core -= allocate_flavors[i].cpu_core;
-		temp.left_memory_size -= allocate_flavors[i].memory_size ;
-		
-		i++;
-		//从右边开始放小的
-		while (i <= j && (allocate_flavors[j].cpu_core <= temp.left_cpu_core && allocate_flavors[j].memory_size <= temp.left_memory_size))
-		{
-			//判断有没有在该物理机放置过同样规格的，放置过的话预测数量加一
-			unsigned int k;
-			for (k = 0; k < temp.flavors.size(); k++)
-			{
-				if (temp.flavors[k].flavor_name == allocate_flavors[j].flavor_name)
-				{
-					temp.flavors[k].predict_number++;
-					break;
-				}
-			}
-
-			//没有放置过则push_back一个新的
-			if (k == temp.flavors.size())
-			{
-				Flavor flavor = allocate_flavors[j];
-				flavor.predict_number = 1;
-				temp.flavors.push_back(flavor);
-			}
-
-			//temp减去放置的容量
-			temp.left_cpu_core -= allocate_flavors[j].cpu_core;
-			temp.left_memory_size -= allocate_flavors[j].memory_size;
-			j--;
-		}
-
-	
-		physical_servers.push_back(temp);
-		temp.flavors.clear();
-		temp.index = index++;
-		temp.left_cpu_core = physical_server.cpu_core;
-		temp.left_memory_size = physical_server.memory_size;
 	}
-	
+		
 }
