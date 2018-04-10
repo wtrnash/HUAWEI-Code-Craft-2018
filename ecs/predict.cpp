@@ -237,11 +237,17 @@ bool compare(Flavor f1, Flavor f2)
 {
 	if (is_cpu) 
 	{
-		return f1.cpu_core > f2.cpu_core;
+		if (f1.cpu_core == f2.cpu_core)
+			return f1.memory_size > f2.memory_size;
+		else
+			return f1.cpu_core > f2.cpu_core;
 	}
 	else
 	{
-		return f1.memory_size > f2.memory_size;
+		if (f1.memory_size == f2.memory_size)
+			return f1.cpu_core > f2.cpu_core;
+		else
+			return f1.memory_size > f2.memory_size;
 	}
 }
 // ·ÖÅäÐéÄâ»ú
