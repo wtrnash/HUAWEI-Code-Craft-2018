@@ -230,12 +230,26 @@ void predict()
 		sum_of_flavor += flavors[i].predict_number;
 	}
 
-	return;
 }
 
+//将flavor根据所优化资源降序排序
+bool compare(Flavor f1, Flavor f2)
+{
+	if (is_cpu) 
+	{
+		return f1.cpu_core > f2.cpu_core;
+	}
+	else
+	{
+		return f1.memory_size > f2.memory_size;
+	}
+}
 // 分配虚拟机
 void allocate_vm()
 {
+	//FFD算法
+	//降序排序
+	sort(flavors.begin(), flavors.end(), compare);
 	//第一个物理服务器
 	int index = 1;
 	Allocated_Physical_server temp;
