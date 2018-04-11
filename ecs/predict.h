@@ -46,4 +46,5 @@ void predict(void);
 void allocate_vm(void);
 vector<Allocated_physical_server> allocate_one_time(vector<Flavor> allocate_flavors);
 double get_current_utilization_rate(vector<Allocated_physical_server> allocated_physical_server);
+void denoise(void);
 #endif

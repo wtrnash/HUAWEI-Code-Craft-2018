@@ -24,6 +24,9 @@ void predict_server(char * info[MAX_INFO_NUM], char * data[MAX_DATA_NUM], int da
 	get_input(info);	//解析输入文件
 	get_data(data, data_num);	//解析要训练的样本
 
+	//数据去噪
+	denoise();
+
 	//训练模型, 预测
 	predict();
 
@@ -279,7 +282,7 @@ void allocate_vm()
 	vector<Allocated_physical_server> current_physical_server;	//每次分配的物理服务器
 	double min_utilization_rate = allocate_flavors.size();	//记录最少的服务器利用率，用n-1个服务器个数 和最后一个服务器的资源利用率表示，初始化为一个虚拟机放一个物理服务器
 	double current_utilization_rate;
-	double t = 130.0;	//初始温度
+	double t = 110.0;	//初始温度
 	double t_min = 1.0;	//最终温度
 	double k = 0.9999;	//温度下降系数
 	while(t > t_min)
@@ -384,4 +387,37 @@ double get_current_utilization_rate(vector<Allocated_physical_server> allocated_
 		current_utilization_rate = allocated_physical_server.size() - 1 + 1.0 * (physical_server.memory_size - allocated_physical_server[allocated_physical_server.size() - 1].left_memory_size) / physical_server.memory_size;
 
 	return current_utilization_rate;
+}
+
+//去噪
+void denoise()
+{
+	int sum;
+	double mean;
+	double multiple = 10.0;
+	for (int i = 0; i < flavors.size(); i++)
+	{
+		//计算平均值
+		sum = 0;
+		for (int j = 1; j <= train_day; j++)
+		{
+			sum += flavors[i].flavor_number_of_day[j];
+		}
+
+		mean = 1.0 * sum / train_day;
+
+		for (int j = 1; j <= train_day; j++)
+		{
+			//如果数据大于平均值的一定倍数，则是噪声，通过两边的平均值来进行去噪
+			if ((double)flavors[i].flavor_number_of_day[j] > multiple * mean)
+			{
+				if (j == 1)
+					flavors[i].flavor_number_of_day[1] = flavors[i].flavor_number_of_day[2];
+				else if (j == train_day)
+					flavors[i].flavor_number_of_day[train_day] = flavors[i].flavor_number_of_day[train_day - 1];
+				else
+					flavors[i].flavor_number_of_day[j] = (int)round((flavors[i].flavor_number_of_day[j - 1] + flavors[i].flavor_number_of_day[j + 1]) / 2.0);
+			}
+		}
+	}
 }
