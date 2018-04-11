@@ -394,7 +394,7 @@ void denoise()
 {
 	int sum;
 	double mean;
-	double multiple = 10.0;
+	double threshold = 10.0;
 	for (int i = 0; i < flavors.size(); i++)
 	{
 		//计算平均值
@@ -409,7 +409,7 @@ void denoise()
 		for (int j = 1; j <= train_day; j++)
 		{
 			//如果数据大于平均值的一定倍数，则是噪声，通过两边的平均值来进行去噪
-			if ((double)flavors[i].flavor_number_of_day[j] > multiple * mean)
+			if ((double)flavors[i].flavor_number_of_day[j] - mean > threshold)
 			{
 				if (j == 1)
 					flavors[i].flavor_number_of_day[1] = flavors[i].flavor_number_of_day[2];
