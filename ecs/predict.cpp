@@ -394,7 +394,7 @@ void denoise()
 {
 	int sum;
 	double mean;
-	double threshold = 15.0;
+	double threshold = 20.0;
 	for (int i = 0; i < flavors.size(); i++)
 	{
 		//计算平均值
