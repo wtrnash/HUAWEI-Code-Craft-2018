@@ -419,12 +419,7 @@ void denoise()
 		{
 			if (flavors[i].flavor_number_of_day[j] > 10 * mean)
 			{
-				if (j == 1)
-					flavors[i].flavor_number_of_day[j] = flavors[i].flavor_number_of_day[j + 1];
-				else if (j == train_day)
-					flavors[i].flavor_number_of_day[j] = flavors[i].flavor_number_of_day[j - 1];
-				else
-					flavors[i].flavor_number_of_day[j] = (int)ceil((flavors[i].flavor_number_of_day[j + 1] + flavors[i].flavor_number_of_day[j - 1]) / 2.0);
+				flavors[i].flavor_number_of_day[j] = (int)floor(mean);
 			}
 		}
 
