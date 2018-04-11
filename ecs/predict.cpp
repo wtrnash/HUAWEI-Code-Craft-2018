@@ -394,7 +394,7 @@ void denoise()
 {
 	int sum;
 	double mean;
-	double multiple = 15.0;
+	double multiple = 11.0;
 	for (int i = 0; i < flavors.size(); i++)
 	{
 		//计算平均值
