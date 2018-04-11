@@ -25,7 +25,7 @@ void predict_server(char * info[MAX_INFO_NUM], char * data[MAX_DATA_NUM], int da
 	get_data(data, data_num);	//解析要训练的样本
 
 	//数据去噪
-	denoise();
+	//denoise();
 	//训练模型, 预测
 	predict();
 
