@@ -24,6 +24,8 @@ void predict_server(char * info[MAX_INFO_NUM], char * data[MAX_DATA_NUM], int da
 	get_input(info);	//解析输入文件
 	get_data(data, data_num);	//解析要训练的样本
 
+	//数据去噪
+	denoise();
 	//训练模型, 预测
 	predict();
 
@@ -384,4 +386,48 @@ double get_current_utilization_rate(vector<Allocated_physical_server> allocated_
 		current_utilization_rate = allocated_physical_server.size() - 1 + 1.0 * (physical_server.memory_size - allocated_physical_server[allocated_physical_server.size() - 1].left_memory_size) / physical_server.memory_size;
 
 	return current_utilization_rate;
+}
+
+//数据去噪
+void denoise()
+{
+	int sum;
+	double mean;
+	double variance;
+	double stddev;
+	for (unsigned int i = 0; i < flavors.size(); i++)
+	{
+		sum = 0;
+		//求均值
+		for (int j = 1; j <= train_day; j++)
+		{
+			sum += flavors[i].flavor_number_of_day[j];
+		}
+
+		mean = 1.0 * sum / train_day;
+		//求标准差
+		variance = 0.0;
+		for (int j = 1; j <= train_day; j++)
+		{
+			variance += pow(flavors[i].flavor_number_of_day[j] - mean, 2);
+		}
+		variance /= train_day;
+		stddev = sqrt(variance);
+
+		//去除异常数据
+		for (int j = 1; j <= train_day; j++)
+		{
+			if (flavors[i].flavor_number_of_day[j] > 10 * mean)
+			{
+				if (j == 1)
+					flavors[i].flavor_number_of_day[j] = flavors[i].flavor_number_of_day[j + 1];
+				else if (j == train_day)
+					flavors[i].flavor_number_of_day[j] = flavors[i].flavor_number_of_day[j - 1];
+				else
+					flavors[i].flavor_number_of_day[j] = (int)ceil((flavors[i].flavor_number_of_day[j + 1] + flavors[i].flavor_number_of_day[j - 1]) / 2.0);
+			}
+		}
+
+
+	}
 }
