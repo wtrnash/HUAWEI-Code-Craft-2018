@@ -14,6 +14,7 @@ time_t train_start_time_t, train_end_time_t;	//ÑµÁ·µÄ¿ªÊ¼ºÍ½áÊøÊ±¼ä×ªÎªtime_t¸ñÊ
 int train_day;					//ĞèÔ¤²âµÄÌìÊı
 int sum_of_flavor = 0;	//ÒªÔ¤²âµÄĞéÄâ»ú×ÜÊı
 vector<Allocated_physical_server> physical_servers;	//ËùÓĞÎïÀí·şÎñÆ÷
+double original_rate;
 
 //ÄãÒªÍê³ÉµÄ¹¦ÄÜ×ÜÈë¿Ú
 void predict_server(char * info[MAX_INFO_NUM], char * data[MAX_DATA_NUM], int data_num, char * filename)
@@ -29,9 +30,6 @@ void predict_server(char * info[MAX_INFO_NUM], char * data[MAX_DATA_NUM], int da
 	//ÑµÁ·Ä£ĞÍ, Ô¤²â
 	predict();
 
-	//×°Åä
-	allocate_vm();
-
 	//´¦ÀíÊä³ö
 	string result = to_string(sum_of_flavor) + "\n";
 	for (unsigned int i = 0; i < flavors.size(); i++)
@@ -42,11 +40,16 @@ void predict_server(char * info[MAX_INFO_NUM], char * data[MAX_DATA_NUM], int da
 		result += " \n";
 	}
 	result += "\n";
+
+	//×°Åä
+	allocate_vm();
+
+	//´¦ÀíÊä³ö
 	result += to_string(physical_servers.size());
 	result += "\n";
 	for (unsigned int i = 0; i < physical_servers.size(); i++)
 	{
-		result += to_string(physical_servers[i].index);
+		result += to_string(i + 1);
 		for (unsigned int j = 0; j < physical_servers[i].flavors.size(); j++)
 		{
 			result += " ";
@@ -72,6 +75,7 @@ void get_input(char *info[MAX_INFO_NUM])
 	physical_server.memory_size = atoi(physical_info.substr(first_space + 1,  second_space - first_space - 1).c_str());
 	physical_server.disk_size = atoi(physical_info.substr(second_space + 1).c_str());
 
+	original_rate = 1.0 * physical_server.cpu_core / physical_server.memory_size;
 	//´¦ÀíinputµÚÈıĞĞ
 	number_of_flavor = atoi(info[2]);
 
@@ -252,140 +256,167 @@ bool compare(Flavor f1, Flavor f2)
 			return f1.memory_size > f2.memory_size;
 	}
 }
-//Ä£ÄâÍË»ğ·ÖÅäĞéÄâ»ú
+//·ÖÅäĞéÄâ»ú
 void allocate_vm()
 {
-	vector<Flavor> min_allocate_flavors;
-	vector<Flavor> allocate_flavors;	//ÓÃÀ´×°ÅäµÄËùÓĞĞéÄâ»ú
-	Flavor temp_flavor;
 	for (unsigned int i = 0; i < flavors.size(); i++)
 	{
-		for (unsigned int j = 0; j < flavors[i].predict_number; j++)
-		{
-			temp_flavor = flavors[i];
-			temp_flavor.predict_number = 1;
-			temp_flavor.memory_size = (int)ceil(1.0 * temp_flavor.memory_size / 1024);
-			allocate_flavors.push_back(temp_flavor);
-		}
-	}
-	//½µĞòÅÅĞò
-	sort(allocate_flavors.begin(), allocate_flavors.end(), compare);
-
-	vector<int> indices;	//¼ÇÂ¼flavorËùÓĞÏÂ±ê
-	for (unsigned int i = 0; i < allocate_flavors.size(); i++)
-	{
-		indices.push_back(i);
+		flavors[i].memory_size = (int)ceil(1.0 * flavors[i].memory_size / 1024);
 	}
 
-	min_allocate_flavors = allocate_flavors;
-	vector<Allocated_physical_server> current_physical_server;	//Ã¿´Î·ÖÅäµÄÎïÀí·şÎñÆ÷
-	double min_utilization_rate = allocate_flavors.size();	//¼ÇÂ¼×îÉÙµÄ·şÎñÆ÷ÀûÓÃÂÊ£¬ÓÃn-1¸ö·şÎñÆ÷¸öÊı ºÍ×îºóÒ»¸ö·şÎñÆ÷µÄ×ÊÔ´ÀûÓÃÂÊ±íÊ¾£¬³õÊ¼»¯ÎªÒ»¸öĞéÄâ»ú·ÅÒ»¸öÎïÀí·şÎñÆ÷
-	double current_utilization_rate;
-	double t = 1.5;	//³õÊ¼ÎÂ¶È
-	double t_min = 1.0;	//×îÖÕÎÂ¶È
-	double k = 0.9999;	//ÎÂ¶ÈÏÂ½µÏµÊı
-	while(t > t_min)
-	{
-		random_shuffle(indices.begin(), indices.end());	//´òÂÒÏÂ±êÅÅĞò
-		allocate_flavors = min_allocate_flavors;
-		//ÒÔindicesÇ°Á½¸öÔªËØ×÷Îªallocate_flavorsÒª½»»»µÄÏÂ±ê
-		swap(allocate_flavors[indices[0]], allocate_flavors[indices[1]]);
-		current_physical_server = allocate_one_time(allocate_flavors);
-		current_utilization_rate = get_current_utilization_rate(current_physical_server);
-		//Èç¹ûµ±Ç°±È½ÏĞ¡£¬ÔòÖ±½ÓÈ¡µ±Ç°Îª×îÓÅ½â
-		if (current_utilization_rate < min_utilization_rate)
-		{
-			min_utilization_rate = current_utilization_rate;
-			physical_servers = current_physical_server;
-			min_allocate_flavors = allocate_flavors;
-		}
-		else   //·ñÔòÒ»¶¨¸ÅÂÊ¸üĞÂµ±Ç°Îª×îÓÅ½â
-		{
-			//exp(-delta t / T) ´óÓÚÒ»¶¨¸ÅÂÊ£¨¸ÅÂÊÔÚ0µ½1Ö®¼ä£©Ôò½ÓÊÜÁÓ½â
-			if (exp(1.0 * (min_utilization_rate - current_utilization_rate) / t) > (rand()/RAND_MAX))
-			{
-				min_utilization_rate = current_utilization_rate;
-				physical_servers = current_physical_server;
-				min_allocate_flavors = allocate_flavors;
-			}
-		}
-
-		t *= k;
-	}
+	balance_sort();
+	greedy_allocate();
 		
 }
 
-//Ò»´Î×°Åä
-vector<Allocated_physical_server> allocate_one_time(vector<Flavor> allocate_flavors)
-{
-	vector<Allocated_physical_server>  allocated_Physical_server;
-	//µÚÒ»¸öÎïÀí·şÎñÆ÷
-	int index = 1;
-	Allocated_physical_server temp;
-	temp.index = index++;
-	temp.left_cpu_core = physical_server.cpu_core;
-	temp.left_memory_size = physical_server.memory_size;
-	allocated_Physical_server.push_back(temp);
-	//±éÀúËùÓĞÖÖÀàµÄflavors
-	for (unsigned int i = 0; i < allocate_flavors.size(); i++)
-	{
-		unsigned int m;
-		for (m = 0; m < allocated_Physical_server.size(); m++)
-		{
-			//Èç¹û¿ÉÒÔ·Å
-			if (allocate_flavors[i].cpu_core <= allocated_Physical_server[m].left_cpu_core && allocate_flavors[i].memory_size <= allocated_Physical_server[m].left_memory_size)
-			{
-				//ÅĞ¶ÏÓĞÃ»ÓĞÔÚ¸ÃÎïÀí»ú·ÅÖÃ¹ıÍ¬Ñù¹æ¸ñµÄ£¬·ÅÖÃ¹ıµÄ»°Ô¤²âÊıÁ¿¼ÓÒ»
-				unsigned int k;
-				for (k = 0; k < allocated_Physical_server[m].flavors.size(); k++)
-				{
-					if (allocated_Physical_server[m].flavors[k].flavor_name == allocate_flavors[i].flavor_name)
+void balance_sort() 
+{//°´cpuÓëmem²î¶î¾ø¶ÔÖµ´ÓĞ¡µ½´óÅÅĞò£¬ÏàµÈµÄ°´¹æÄ£´ÓĞ¡µ½´óÅÅĞò£¬¼ÆËã²î¶îÊ±mem°´±ÈÀı»»Ëã
+	for (unsigned int i = 0; i < flavors.size(); i++)
+		flavors[i].gap = flavors[i].cpu_core - flavors[i].memory_size * original_rate;
+	vector<Flavor> new_flavors;
+	new_flavors.push_back(flavors[0]);
+	for (unsigned int i = 1; i < flavors.size(); i++) {
+		bool is_insert = false;
+		for (unsigned int j = 0; j < new_flavors.size(); j++) {
+			if (abs(flavors[i].gap) < abs(new_flavors[j].gap)) {//Èç¹û²î¶îĞ¡ÓÚÖ±½Ó²åÈëjÎ»ÖÃ
+				vector<Flavor>::iterator pr = new_flavors.begin();
+				pr += j;
+				new_flavors.insert(pr, flavors[i]);
+				is_insert = true;
+				break;
+			}//endif
+			else if (abs(flavors[i].gap) == abs(new_flavors[j].gap)) {
+				if (is_cpu) {
+					if (flavors[i].cpu_core < new_flavors[j].cpu_core ||
+						(flavors[i].cpu_core == new_flavors[j].cpu_core && flavors[i].memory_size < new_flavors[j].memory_size))
 					{
-						allocated_Physical_server[m].flavors[k].predict_number++;
+						vector<Flavor>::iterator pr = new_flavors.begin();
+						pr += j;
+						new_flavors.insert(pr, flavors[i]);
+						is_insert = true;
 						break;
 					}
 				}
-
-				//Ã»ÓĞ·ÅÖÃ¹ıÔòpush_backÒ»¸öĞÂµÄ
-				if (k == allocated_Physical_server[m].flavors.size())
-				{
-					Flavor flavor = allocate_flavors[i];
-					flavor.predict_number = 1;
-					allocated_Physical_server[m].flavors.push_back(flavor);
+				else {
+					if (flavors[i].memory_size < new_flavors[j].memory_size ||
+						(flavors[i].memory_size == new_flavors[j].memory_size && flavors[i].cpu_core < new_flavors[j].cpu_core))
+					{
+						vector<Flavor>::iterator pr = new_flavors.begin();
+						pr += j;
+						new_flavors.insert(pr, flavors[i]);
+						is_insert = true;
+						break;
+					}
 				}
-
-				//¼õÈ¥·ÅÖÃµÄÈİÁ¿
-				allocated_Physical_server[m].left_cpu_core -= allocate_flavors[i].cpu_core;
-				allocated_Physical_server[m].left_memory_size -= allocate_flavors[i].memory_size;
-				break;
-			}
-		}
-
-		if (m == allocated_Physical_server.size())   //Èç¹û²»ÄÜ·ÅÔòÓÃÈ«ĞÂµÄÎïÀí»ú
-		{
-			temp.index = index++;
-			temp.left_cpu_core = physical_server.cpu_core - allocate_flavors[i].cpu_core;
-			temp.left_memory_size = physical_server.memory_size - allocate_flavors[i].memory_size;
-			temp.flavors.clear();
-			Flavor flavor = allocate_flavors[i];
-			temp.flavors.push_back(flavor);
-			allocated_Physical_server.push_back(temp);
-		}
-	}
-
-	return allocated_Physical_server;
+			}//endelse
+		}//endfor
+		if (!is_insert) new_flavors.push_back(flavors[i]);
+	}//endfor
+	flavors = new_flavors;
+	new_flavors.clear();
 }
 
-//»ñµÃµ±Ç°ÀûÓÃÂÊ
-double get_current_utilization_rate(vector<Allocated_physical_server> allocated_physical_server)
-{
-	double current_utilization_rate;
-	if (is_cpu)
-		current_utilization_rate = allocated_physical_server.size() - 1 + 1.0 * (physical_server.cpu_core - allocated_physical_server[allocated_physical_server.size() - 1].left_cpu_core) / physical_server.cpu_core;
-	else
-		current_utilization_rate = allocated_physical_server.size() - 1 + 1.0 * (physical_server.memory_size - allocated_physical_server[allocated_physical_server.size() - 1].left_memory_size) / physical_server.memory_size;
-
-	return current_utilization_rate;
+void greedy_allocate() 
+{//Èç¹ûµ±Ç°·şÎñÆ÷Ê£Óà×ÊÔ´²î¶î¾ø¶ÔÖµÕ¼Ä¿Ç°Ê£Óàcpu×ÊÔ´ÔÚ%ÒÔÏÂÊ±ÊÓÎªÁ½×ÊÔ´ÏàµÈ£¬ÏàµÈµÄÊ±ºòÑ¡È¡Ò»¸ö²»´óÓÚÊ£Óà×ÊÔ´%
+						//µÄÒ»¸ö×î´óĞéÄâ»ú·ÅÈë£¬È»ºóÕÒÑ°²î¶î¾ø¶ÔÖµ×î½Ó½ü£¬·ûºÅÏàÍ¬µÄĞéÄâ»ú·ÅÈëÊ¹Á½×ÊÔ´ÏàµÈ£¬ÖØ¸´ÒÔÉÏ¹ı³Ì
+	int n = 0;
+	for (unsigned int i = 0; i < flavors.size(); i++) n += flavors[i].predict_number;
+	Allocated_physical_server empty_physic_server;
+	empty_physic_server.left_cpu_core = physical_server.cpu_core;
+	empty_physic_server.left_memory_size = physical_server.memory_size;
+	double original_rate = 1.0* physical_server.cpu_core / physical_server.memory_size;
+	int index = 0;
+	while (n > 0) {
+		physical_servers.push_back(empty_physic_server);
+		bool is_finish = false;
+		double is_equal = 0.02;
+		double limit = 0.5;
+		while (!is_finish) {
+			double server_gap = physical_servers[index].left_cpu_core - physical_servers[index].left_memory_size*original_rate;
+			int k = 0;
+			bool is_find = false;
+			if (server_gap <= is_equal) {//µ±Ç°²î¶î¼«Ğ¡Ê±ÈÏÎª¿ÉÒÔ½ÏÎªËæÒâµÄ·ÅÖÃĞéÄâ»ú¶ø²»±Ø¿¼ÂÇ¼õĞ¡²î¶î
+				for (int i = (int)flavors.size() - 1; i >= 0; i--) {
+					if (abs(flavors[i].gap - server_gap) < 1)limit = 1;//limitÖµÓë²î¶î´óĞ¡ÓĞ¹Ø£¬Èç¹û²î¶î¼«Ğ¡£¬ÔòÈÏÎª¿ÉÒÔÍêÈ«ÌîÂú£¬limitÎª1
+					else limit = 0.5;//Èç¹û²î¶î½Ï´ó£¬Áô³ö¿Õ¼ä×°ÌîÁíÒ»¸öÒÔ¼õĞ¡²î¶î
+					if (flavors[i].predict_number > 0 && 1.0 * flavors[i].cpu_core / physical_servers[index].left_cpu_core <= limit &&
+						1.0 * flavors[i].cpu_core / physical_servers[index].left_cpu_core <= limit) {
+						k = i;
+						is_find = true;
+						break;
+					}
+				}//endfor
+			}//endif
+			else {//Èç¹û²î¶î½Ï´ó£¬ÔòÑ¡Ôñ²î¶î×î½Ó½üµÄĞéÄâ»ú×°Èë¼õĞ¡²î¶î
+				for (unsigned int i = 0; i < flavors.size(); i++) {//ÕÒ²î¶î¾ø¶ÔÖµ×î½Ó½ü·ûºÅÏàÍ¬ÉÔ´óµÄ
+					if (flavors[i].predict_number > 0 && abs(flavors[i].gap) >= abs(server_gap) && flavors[i].gap*server_gap > 0 &&
+						flavors[i].cpu_core <= physical_servers[index].left_cpu_core &&
+						flavors[i].memory_size <= physical_servers[index].left_memory_size) {
+						k = i;
+						is_find = true;
+						break;
+					}
+				}
+				if (!is_find) {//Èç¹ûÎ´ÕÒµ½£¬ÕÒ²î¶îÉÔĞ¡Ò»Ğ©µÄ
+					for (int i = (int)flavors.size() - 1; i >= 0; i--) {
+						if (flavors[i].predict_number > 0 && abs(flavors[i].gap) <= abs(server_gap) && flavors[i].gap*server_gap > 0 &&
+							flavors[i].cpu_core <= physical_servers[index].left_cpu_core &&
+							flavors[i].memory_size <= physical_servers[index].left_memory_size) {
+							k = i;
+							is_find = true;
+							break;
+						}
+					}//endfor
+				}
+			}//enelse
+			if (!is_find) {//Èç¹ûÒÔÉÏ¶¼Î´ÕÒµ½£¬¿ÉÊÓ×÷µ±Ç°ĞéÄâ»ú¿ÉÒÔ·ÅÈëµÄ½ÔcpuÆ«¶à»òÆ«ÉÙ£¬½ÓÏÂÀ´ÕÒ×î´ó¿É·ÅÈë×°Èë
+				for (int i = (int)flavors.size() - 1; i >= 0; i--) {
+					if (flavors[i].predict_number > 0 && flavors[i].cpu_core <= physical_servers[index].left_cpu_core &&
+						flavors[i].memory_size <= physical_servers[index].left_memory_size) {
+						k = i;
+						is_find = true;
+						break;
+					}
+				}
+			}//endelse
+			if (is_find) {//·ÅÈëµ±Ç°ÎïÀí·şÎñÆ÷ÖĞ
+				bool is_exist = false;
+				for (unsigned int i = 0; i < physical_servers[index].flavors.size(); i++) {
+					if (flavors[k].flavor_name == physical_servers[index].flavors[i].flavor_name) {
+						physical_servers[index].flavors[i].predict_number++;
+						is_exist = true;
+						break;
+					}
+				}
+				if (!is_exist) {
+					for (unsigned int i = 0; i < physical_servers[index].flavors.size(); i++) {
+						if (flavors[k].index < physical_servers[index].flavors[i].index) {
+							vector<Flavor>::iterator pr = physical_servers[index].flavors.begin();
+							pr += i;
+							Flavor flavor = flavors[k];
+							flavor.predict_number = 1;
+							physical_servers[index].flavors.insert(pr, flavor);
+							is_exist = true;
+							break;
+						}
+					}
+				}
+				if (!is_exist) {
+					Flavor flavor = flavors[k];
+					flavor.predict_number = 1;
+					physical_servers[index].flavors.push_back(flavor);
+				}
+				flavors[k].predict_number--;
+				physical_servers[index].left_cpu_core -= flavors[k].cpu_core;
+				physical_servers[index].left_memory_size -= flavors[k].memory_size;
+				n--;
+				//cout << n <<",index:"<< k <<endl;
+				if (physical_servers[index].left_cpu_core == 0 || physical_servers[index].left_memory_size == 0)is_finish = true;
+			}//endif
+			else is_finish = true;//Èç¹ûÈÔÎ´ÕÒµ½£¬µ±Ç°ÎïÀí·şÎñÆ÷ÒÑ¾­×°Âú
+		}//endwhile
+		index++;
+	}//endwhile
 }
 
 //Êı¾İÈ¥Ôë
@@ -422,7 +453,6 @@ void denoise()
 				flavors[i].flavor_number_of_day[j] = (int)floor(mean);
 			}
 		}
-
 
 	}
 }

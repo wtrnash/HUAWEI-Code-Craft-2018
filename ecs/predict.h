@@ -21,12 +21,14 @@ struct Physical_server {
 
 //虚拟机规格信息结构体
 struct Flavor {
+	int index;
 	string flavor_name;
 	unsigned int cpu_core;
 	unsigned int memory_size;
 	vector<string> time;	//虚拟机申请记录的具体时间
 	unsigned int *flavor_number_of_day;		//记录虚拟机每天的申请数目
 	unsigned int predict_number = 0;		//记录预测的虚拟机总数
+	double gap = 0;
 };
 
 //实际安装的物理服务器
@@ -47,4 +49,6 @@ void allocate_vm(void);
 vector<Allocated_physical_server> allocate_one_time(vector<Flavor> allocate_flavors);
 double get_current_utilization_rate(vector<Allocated_physical_server> allocated_physical_server);
 void denoise(void);
+void balance_sort(void);
+void greedy_allocate(void);
 #endif
