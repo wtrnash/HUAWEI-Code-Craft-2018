@@ -469,7 +469,7 @@ void denoise()
 		//去除异常数据
 		for (int j = 1; j <= train_day; j++)
 		{
-			if (flavors[i].flavor_number_of_day[j] - mean > 8 * stddev)
+			if (flavors[i].flavor_number_of_day[j] > 10 * mean)
 			{
 				flavors[i].flavor_number_of_day[j] = (int)floor(mean);
 			}
