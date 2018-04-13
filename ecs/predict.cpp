@@ -222,19 +222,17 @@ void tackle_train_record(string flavor_name, string time)
 
 void predict()
 {
-	double a = 0.073;
+	double a = 0.1;
 	double *s1, *s2;
 	for (unsigned int i = 0; i < flavors.size(); i++)
 	{
 		s1 = single_exponential_smoothing(a, flavors[i].flavor_number_of_day);
 		s2 = second_exponential_smoothing(a, s1);
 
-		double sum = 0;
 		for (int j = train_day + 1; j < train_day + 1 + predict_day; j++)
 		{
-			 sum += s2[j] >= 0? s2[j] : 0;
+			flavors[i].predict_number += s2[j] >= 0? (int)floor(s2[j]) : 0;
 		}
-		flavors[i].predict_number = (int)floor(sum);
 
 		sum_of_flavor += flavors[i].predict_number;
 		delete s1;
