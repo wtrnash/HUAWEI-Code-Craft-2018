@@ -234,6 +234,7 @@ void predict()
 			flavors[i].predict_number += s2[j] >= 0? (int)floor(s2[j]) : 0;
 		}
 
+		sum_of_flavor += flavors[i].predict_number;
 		delete s1;
 		delete s2;
 	}
