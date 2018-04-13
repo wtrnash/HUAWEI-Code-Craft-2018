@@ -226,36 +226,16 @@ void predict()
 	double *s1, *s2;
 	for (unsigned int i = 0; i < flavors.size(); i++)
 	{
-		
-		//m为虚拟机增量，即yt+1 - yt
-		unsigned int *m = new unsigned int[train_day + 1];
-		m[1] = 0;
-		for (int j = 2; j < train_day + 1; j++)
-		{
-			m[j] = flavors[i].flavor_number_of_day[j] > flavors[i].flavor_number_of_day[j - 1] ? flavors[i].flavor_number_of_day[j] - flavors[i].flavor_number_of_day[j - 1] : 0;
-		}
-		s1 = single_exponential_smoothing(a, m);
+		s1 = single_exponential_smoothing(a, flavors[i].flavor_number_of_day);
 		s2 = second_exponential_smoothing(a, s1);
-		int *answer = new int[predict_day];
-		answer[0] = (int)floor(flavors[i].flavor_number_of_day[train_day] + s2[train_day + 1]);
-		if (answer[0] < 0)
-			answer[0] = 0;
-		for (int j =  1; j < predict_day; j++)
-		{
-			answer[j] = (int)floor(answer[j-1] + s2[train_day + j + 1]);
-			if (answer[j] < 0)
-				answer[j] = 0;
-		}
 
-		for (int j = 0; j < predict_day; j++)
+		for (int j = train_day + 1; j < train_day + 1 + predict_day; j++)
 		{
-			flavors[i].predict_number += answer[j];
+			flavors[i].predict_number += s2[j] >= 0? (int)floor(s2[j]) : 0;
 		}
 
 		delete s1;
 		delete s2;
-		delete m;
-		delete answer;
 	}
 }
 //一次指数平滑预测法
