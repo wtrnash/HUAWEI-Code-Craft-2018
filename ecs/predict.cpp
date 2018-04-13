@@ -26,7 +26,7 @@ void predict_server(char * info[MAX_INFO_NUM], char * data[MAX_DATA_NUM], int da
 	get_data(data, data_num);	//解析要训练的样本
 
 	//数据去噪
-	//denoise();
+	denoise();
 	//训练模型, 预测
 	predict();
 
@@ -222,7 +222,7 @@ void tackle_train_record(string flavor_name, string time)
 
 void predict()
 {
-	double a = 0.098;
+	double a = 0.1;
 	double *s1, *s2;
 	for (unsigned int i = 0; i < flavors.size(); i++)
 	{
