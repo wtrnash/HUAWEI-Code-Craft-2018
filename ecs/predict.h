@@ -21,7 +21,6 @@ struct Physical_server {
 
 //虚拟机规格信息结构体
 struct Flavor {
-	int index;
 	string flavor_name;
 	unsigned int cpu_core;
 	unsigned int memory_size;
@@ -33,7 +32,6 @@ struct Flavor {
 
 //实际安装的物理服务器
 struct Allocated_physical_server {
-	int index;	//序号
 	unsigned int left_cpu_core;	//剩下的cpu
 	unsigned int left_memory_size;	//剩下的内存
 	vector<Flavor> flavors;			//装有的虚拟机

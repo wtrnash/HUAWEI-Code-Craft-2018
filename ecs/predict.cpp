@@ -433,19 +433,6 @@ void greedy_allocate()
 					}
 				}
 				if (!is_exist) {
-					for (unsigned int i = 0; i < physical_servers[index].flavors.size(); i++) {
-						if (flavors[k].index < physical_servers[index].flavors[i].index) {
-							vector<Flavor>::iterator pr = physical_servers[index].flavors.begin();
-							pr += i;
-							Flavor flavor = flavors[k];
-							flavor.predict_number = 1;
-							physical_servers[index].flavors.insert(pr, flavor);
-							is_exist = true;
-							break;
-						}
-					}
-				}
-				if (!is_exist) {
 					Flavor flavor = flavors[k];
 					flavor.predict_number = 1;
 					physical_servers[index].flavors.push_back(flavor);
