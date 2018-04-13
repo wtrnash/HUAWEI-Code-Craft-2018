@@ -227,7 +227,7 @@ void predict()
 	for (unsigned int i = 0; i < flavors.size(); i++)
 	{
 		s1 = single_exponential_smoothing(a, flavors[i].flavor_number_of_day);
-	//  s2 = second_exponential_smoothing(a, s1);
+		//s2 = second_exponential_smoothing(a, s1);
 
 		for (int j = train_day + 1; j < train_day + 1 + predict_day; j++)
 		{
