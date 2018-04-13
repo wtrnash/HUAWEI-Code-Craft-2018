@@ -47,6 +47,7 @@ void tackle_train_record(string flavor_name, string time);
 void predict(void);	
 double* single_exponential_smoothing(double a, unsigned int* s0);
 double* second_exponential_smoothing(double a, double* s1);
+double* third_exponential_smoothing(double a, double* s1, double* s2);
 void allocate_vm(void);
 vector<Allocated_physical_server> allocate_one_time(vector<Flavor> allocate_flavors);
 double get_current_utilization_rate(vector<Allocated_physical_server> allocated_physical_server);

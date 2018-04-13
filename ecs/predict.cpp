@@ -223,20 +223,22 @@ void tackle_train_record(string flavor_name, string time)
 void predict()
 {
 	double a = 0.115;
-	double *s1, *s2;
+	double *s1, *s2, *s3;
 	for (unsigned int i = 0; i < flavors.size(); i++)
 	{
 		s1 = single_exponential_smoothing(a, flavors[i].flavor_number_of_day);
 		s2 = second_exponential_smoothing(a, s1);
+		s3 = third_exponential_smoothing(a, s1, s2);
 
 		for (int j = train_day + 1; j < train_day + 1 + predict_day; j++)
 		{
-			flavors[i].predict_number += s2[j] >= 0? (int)floor(s2[j]) : 0;
+			flavors[i].predict_number += s3[j] >= 0? (int)floor(s3[j]) : 0;
 		}
 
 		sum_of_flavor += flavors[i].predict_number;
 		delete s1;
 		delete s2;
+		delete s3;
 	}
 }
 //一次指数平滑预测法
@@ -276,6 +278,27 @@ double* second_exponential_smoothing(double a, double* s1)
 		s2[i] = at + bt * (i - train_day);
 	}
 	return s2;
+}
+
+//三次指数平滑预测法
+double* third_exponential_smoothing(double a, double* s1, double* s2)
+{
+	double *s3 = new double[train_day + predict_day + 1];
+	//获取训练的平滑值
+	s3[1] = s2[1];
+	for (int i = 2; i <= train_day; i++)
+	{
+		s3[i] = a * s2[i] + (1 - a) * s3[i - 1];
+	}
+	//预测
+	double at = 3.0 * s1[train_day] - 3.0 * s2[train_day] + s3[train_day];
+	double bt = a / 2.0 / (1 - a) / (1 - a) * ((6 - 5 * a) * s1[train_day] - 2 * (5 - 4 * a) * s2[train_day] + (4 - 3 * a) * s3[train_day]);
+	double ct = a * a / (2 * (1 - a) * (1 - a))* (s1[train_day] - 2 * s2[train_day] + s3[train_day]);
+	for (int i = train_day + 1; i < train_day + predict_day + 1; i++)
+	{
+		s3[i] = at + bt * (i - train_day) + ct * (i - train_day) * (i - train_day);
+	}
+	return s3;
 }
 //分配虚拟机
 void allocate_vm()
