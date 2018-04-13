@@ -222,7 +222,7 @@ void tackle_train_record(string flavor_name, string time)
 
 void predict()
 {
-	double a = 0.1152;
+	double a = 0.115;
 	double *s1, *s2;
 	for (unsigned int i = 0; i < flavors.size(); i++)
 	{
@@ -469,7 +469,7 @@ void denoise()
 		//去除异常数据
 		for (int j = 1; j <= train_day; j++)
 		{
-			if (flavors[i].flavor_number_of_day[j] - mean > 5 * stddev)
+			if (flavors[i].flavor_number_of_day[j] - mean > 4 * stddev)
 			{
 				flavors[i].flavor_number_of_day[j] = (int)floor(mean);
 			}
