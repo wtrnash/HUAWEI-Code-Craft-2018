@@ -227,16 +227,16 @@ void predict()
 	for (unsigned int i = 0; i < flavors.size(); i++)
 	{
 		s1 = single_exponential_smoothing(a, flavors[i].flavor_number_of_day);
-		s2 = second_exponential_smoothing(a, s1);
+//		s2 = second_exponential_smoothing(a, s1);
 
 		for (int j = train_day + 1; j < train_day + 1 + predict_day; j++)
 		{
-			flavors[i].predict_number += s2[j] >= 0? (int)floor(s2[j]) : 0;
+			flavors[i].predict_number += s1[j] >= 0? (int)floor(s1[j]) : 0;
 		}
 
 		sum_of_flavor += flavors[i].predict_number;
 		delete s1;
-		delete s2;
+//		delete s2;
 	}
 }
 //一次指数平滑预测法
