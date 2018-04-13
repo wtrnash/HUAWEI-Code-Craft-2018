@@ -361,7 +361,7 @@ void greedy_allocate()
 					if (abs(flavors[i].gap - server_gap) < 1)limit = 1;//limit值与差额大小有关，如果差额极小，则认为可以完全填满，limit为1
 					else limit = 0.5;//如果差额较大，留出空间装填另一个以减小差额
 					if (flavors[i].predict_number > 0 && 1.0 * flavors[i].cpu_core / physical_servers[index].left_cpu_core <= limit &&
-						1.0 * flavors[i].cpu_core / physical_servers[index].left_cpu_core <= limit) {
+						1.0 * flavors[i].memory_size / physical_servers[index].left_memory_size <= limit) { //暂改
 						k = i;
 						is_find = true;
 						break;
