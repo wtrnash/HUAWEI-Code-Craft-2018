@@ -102,7 +102,7 @@ void get_input(char *info[MAX_INFO_NUM])
 		is_cpu = true;
 
 	//处理开始、结束时间
-	index+=2;
+	index += 2;
 	predict_start_time = info[index++];
 	predict_end_time = info[index];
 	predict_start_time_t = string_to_time(predict_start_time.c_str());
@@ -222,39 +222,79 @@ void tackle_train_record(string flavor_name, string time)
 
 void predict()
 {
-	int sum;
-	//取和预测天数最后一样的天数
+	double a = 0.3;
+	double *s1, *s2;
 	for (unsigned int i = 0; i < flavors.size(); i++)
 	{
-		sum = 0;
-		for (int j = train_day - predict_day + 1; j <= train_day; j++)
+		
+		//m为虚拟机增量，即yt+1 - yt
+		unsigned int *m = new unsigned int[train_day + 1];
+		m[1] = 0;
+		for (int j = 2; j < train_day + 1; j++)
 		{
-			sum += flavors[i].flavor_number_of_day[j];
+			m[j] = flavors[i].flavor_number_of_day[j] > flavors[i].flavor_number_of_day[j - 1] ? flavors[i].flavor_number_of_day[j] - flavors[i].flavor_number_of_day[j - 1] : 0;
+		}
+		s1 = single_exponential_smoothing(a, m);
+		s2 = second_exponential_smoothing(a, s1);
+		int *answer = new int[predict_day];
+		answer[0] = (int)floor(flavors[i].flavor_number_of_day[train_day] + s2[train_day + 1]);
+		if (answer[0] < 0)
+			answer[0] = 0;
+		for (int j =  1; j < predict_day; j++)
+		{
+			answer[j] = (int)floor(answer[j-1] + s2[train_day + j + 1]);
+			if (answer[j] < 0)
+				answer[j] = 0;
 		}
 
-		flavors[i].predict_number = sum;
-		sum_of_flavor += flavors[i].predict_number;
+		for (int j = 0; j < predict_day; j++)
+		{
+			flavors[i].predict_number += answer[j];
+		}
+
+		delete s1;
+		delete s2;
+		delete m;
+		delete answer;
+	}
+}
+//一次指数平滑预测法
+double* single_exponential_smoothing(double a, unsigned int* s0)
+{
+	double *s1 = new double[train_day + predict_day + 1];
+	//获得训练的平滑值
+	s1[1] = s0[1];	//第一个平滑值等于第一个原始值
+	for (int i = 2; i <= train_day; i++)
+	{
+		s1[i] = a * s0[i] + (1 - a) * s1[i - 1];
+	}
+	//预测
+	for (int i = train_day + 1; i < train_day + predict_day + 1; i++)
+	{
+		s1[i] = a * s0[i - 1] + (1 - a) * s1[i - 1];
 	}
 
+	return s1;
 }
 
-//将flavor根据所优化资源降序排序
-bool compare(Flavor f1, Flavor f2)
+//二次指数平滑预测法
+double* second_exponential_smoothing(double a, double* s1)
 {
-	if (is_cpu) 
+	double *s2 = new double[train_day + predict_day + 1];
+	//获取训练的平滑值
+	s2[1] = s1[1];
+	for (int i = 2; i <= train_day; i++)
 	{
-		if (f1.cpu_core == f2.cpu_core)
-			return f1.memory_size > f2.memory_size;
-		else
-			return f1.cpu_core > f2.cpu_core;
+		s2[i] = a * s1[i] + (1 - a) * s2[i - 1];
 	}
-	else
+	//预测
+	double at = 2.0 * s1[train_day] - s2[train_day];
+	double bt = a / (1 - a) * (s1[train_day] - s2[train_day]);
+	for (int i = train_day + 1; i < train_day + predict_day + 1; i++)
 	{
-		if (f1.memory_size == f2.memory_size)
-			return f1.cpu_core > f2.cpu_core;
-		else
-			return f1.memory_size > f2.memory_size;
+		s2[i] = at + bt * (i - train_day);
 	}
+	return s2;
 }
 //分配虚拟机
 void allocate_vm()

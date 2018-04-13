@@ -45,6 +45,8 @@ time_t string_to_time(const char *s);
 void get_data(char * data[MAX_DATA_NUM], int data_num);
 void tackle_train_record(string flavor_name, string time);
 void predict(void);	
+double* single_exponential_smoothing(double a, unsigned int* s0);
+double* second_exponential_smoothing(double a, double* s1);
 void allocate_vm(void);
 vector<Allocated_physical_server> allocate_one_time(vector<Flavor> allocate_flavors);
 double get_current_utilization_rate(vector<Allocated_physical_server> allocated_physical_server);
