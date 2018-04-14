@@ -234,7 +234,7 @@ void tackle_train_record(string flavor_name, string time)
 
 void predict()
 {
-	double a = 0.059;
+	double a = 0.0592;
 	double *s1, *s2, *s3;
 	for (unsigned int i = 0; i < flavors.size(); i++)
 	{
