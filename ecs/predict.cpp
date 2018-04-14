@@ -234,21 +234,23 @@ void tackle_train_record(string flavor_name, string time)
 
 void predict()
 {
-	double a = 0.1155;
-	double *s1, *s2;
+	double a = 0.05925;
+	double *s1, *s2, *s3;
 	for (unsigned int i = 0; i < flavors.size(); i++)
 	{
 		s1 = single_exponential_smoothing(a, flavors[i].flavor_number_of_day);
 		s2 = second_exponential_smoothing(a, s1);
+		s3 = third_exponential_smoothing(a, s1, s2);
 
 		for (int j = train_day + 1; j < train_day + 1 + predict_day; j++)
 		{
-			flavors[i].predict_number += s2[j] >= 0? (int)floor(s2[j]) : 0;
+			flavors[i].predict_number += s3[j] >= 0? (int)floor(s3[j]) : 0;
 		}
 
 		sum_of_flavor += flavors[i].predict_number;
 		delete s1;
 		delete s2;
+		delete s3;
 	}
 }
 //一次指数平滑预测法
