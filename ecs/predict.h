@@ -52,4 +52,5 @@ double get_current_utilization_rate(vector<Allocated_physical_server> allocated_
 void denoise(void);
 void balance_sort(void);
 void greedy_allocate(void);
+Allocated_physical_server final_process(void);
 #endif

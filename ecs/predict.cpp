@@ -3,7 +3,7 @@
 //物理服务器
 Physical_server physical_server;
 
-vector<Flavor> flavors;	//存放所有要预测的虚拟机的规格及对应训练集记录
+vector<Flavor> flavors, protected_flavors;	//存放所有要预测的虚拟机的规格及对应训练集记录
 int number_of_flavor;	//要预测的虚拟机规格的数量
 bool is_cpu;			//要优化的资源是cpu还是内存
 string predict_start_time, predict_end_time;		//预测的开始和结束时间
@@ -30,6 +30,23 @@ void predict_server(char * info[MAX_INFO_NUM], char * data[MAX_DATA_NUM], int da
 	//训练模型, 预测
 	predict();
 
+	protected_flavors = flavors;
+	
+	//装配
+	allocate_vm();
+
+	Allocated_physical_server aps = final_process();
+
+	for (unsigned int i = 0; i < aps.flavors.size(); i++) {
+		for (unsigned int j = 0; j < protected_flavors.size(); j++) {
+			if (aps.flavors[i].flavor_name == protected_flavors[j].flavor_name) {
+				protected_flavors[j].predict_number -= aps.flavors[i].predict_number;
+				break;
+			}
+		}
+	}
+
+	flavors = protected_flavors;
 	//处理输出
 	string result = to_string(sum_of_flavor) + "\n";
 	for (unsigned int i = 0; i < flavors.size(); i++)
@@ -41,10 +58,6 @@ void predict_server(char * info[MAX_INFO_NUM], char * data[MAX_DATA_NUM], int da
 	}
 	result += "\n";
 
-	//装配
-	allocate_vm();
-
-	//处理输出
 	result += to_string(physical_servers.size());
 	result += "\n";
 	for (unsigned int i = 0; i < physical_servers.size(); i++)
@@ -59,7 +72,6 @@ void predict_server(char * info[MAX_INFO_NUM], char * data[MAX_DATA_NUM], int da
 		}
 		result += "\n";
 	}
-
 	result_file = (char *)result.c_str();
 	// 直接调用输出文件的方法输出到指定文件中(ps请注意格式的正确性，如果有解，第一行只有一个数据；第二行为空；第三行开始才是具体的数据，数据之间用一个空格分隔开)
 	write_result(result_file, filename);
@@ -222,7 +234,7 @@ void tackle_train_record(string flavor_name, string time)
 
 void predict()
 {
-	double a = 0.0597;
+	double a = 0.0593;
 	double *s1, *s2, *s3;
 	for (unsigned int i = 0; i < flavors.size(); i++)
 	{
@@ -486,4 +498,32 @@ void denoise()
 		}
 
 	}
+}
+
+Allocated_physical_server final_process() {
+	int rest_sourse;
+	int total_sourse;
+	Allocated_physical_server aps;
+	if (physical_servers.size() == 0)
+		return aps;
+
+	if (is_cpu) {
+		rest_sourse = physical_servers[physical_servers.size() - 1].left_cpu_core;
+		total_sourse = physical_servers.size() * physical_server.cpu_core;
+	}
+	else {
+		rest_sourse = physical_servers[physical_servers.size() - 1].left_memory_size;
+		total_sourse = physical_servers.size()*physical_server.memory_size;
+	}
+
+	double rate = 1.0 * rest_sourse / total_sourse;
+	int vm_num = 0;
+	for (unsigned int i = 0; i < physical_servers[physical_servers.size() - 1].flavors.size(); i++)
+		vm_num += physical_servers[physical_servers.size() - 1].flavors[i].predict_number;
+
+	if (vm_num <= 5 && rate >= 0.3 && physical_servers.size() > 1) {
+		aps = physical_servers[physical_servers.size() - 1];
+		physical_servers.pop_back();
+	}
+	return aps;
 }
